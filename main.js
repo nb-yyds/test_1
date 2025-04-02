@@ -27,18 +27,19 @@ async function getDeviceId() {
   console.log(222);
 
   // 1. 加载数美 SDK
-  // await page.goto(
-  //   "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" +
-  //     new Date.getTime()
-  // );
+  var jsTimer = (new Date().getTime() / (6 * 3600 * 1000)).toFixed(0);
+  await page.goto(
+    "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" + jsTimer,
+    { waitUntil: "networkidle0" }
+  );
   // 或直接注入本地SDK
   // await page.addScriptTag({
   //   path: "./fp.min.js", // SDK 本地路径
   // });
-  const smSDK = fs.readFileSync("./fp.min.js", "utf8");
-  await page.addScriptTag({ content: smSDK });
+  // const smSDK = fs.readFileSync("./fp.min.js", "utf8");
+  // await page.addScriptTag({ content: smSDK });
 
-  console.log(3333333, smSDK);
+  console.log(12345, jsTimer);
 
   // 2. 隐藏自动化特征（关键！）
   await page.evaluateOnNewDocument(() => {
