@@ -315,7 +315,11 @@ async function getSignDeviceId() {
 }
 
 async function mobileEmulation(token) {
-  const browser = await puppeteer.launch({ headless: "new" });
+  console.log("模拟移动端", puppeteer);
+
+  const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
   const page = await browser.newPage();
 
   // 设置移动端 User-Agent 和视口
