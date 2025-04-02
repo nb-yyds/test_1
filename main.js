@@ -18,12 +18,13 @@ const _smConf = {
   protocol: "https", // 如果使用 https，则设置，如不使用，则不设置这个字段
 };
 async function getDeviceId() {
+  console.log(111);
   const browser = await puppeteer.launch({
     headless: "new", // 使用无头模式
     args: ["--no-sandbox"], // 避免沙盒权限问题
   });
   const page = await browser.newPage();
-
+  console.log(222);
   // 1. 加载数美 SDK
   await page.addScriptTag({
     path: "./fp.min.js", // SDK 本地路径
@@ -31,6 +32,7 @@ async function getDeviceId() {
 
   // 2. 隐藏自动化特征（关键！）
   await page.evaluateOnNewDocument(() => {
+    console.log(333);
     Object.defineProperty(navigator, "webdriver", {
       get: () => false,
     });
@@ -39,6 +41,7 @@ async function getDeviceId() {
 
   // 3. 调用 SDK 方法
   const deviceId = await page.evaluate(() => {
+    console.log(444);
     return new Promise((resolve) => {
       // 初始化 SDK（根据数美文档配置参数）
       window.SMSDK.init({
@@ -47,6 +50,7 @@ async function getDeviceId() {
 
       // 获取设备 ID
       window.SMSDK.getDeviceId((id) => {
+        console.log(555, id);
         resolve(id);
       });
     });
@@ -55,11 +59,6 @@ async function getDeviceId() {
   await browser.close();
   return deviceId;
 }
-
-// 执行
-getDeviceId()
-  .then((id) => console.log("DeviceID:", id))
-  .catch((err) => console.error("Failed:", err));
 
 // import { JSDOM } from "jsdom";
 // import { createCanvas } from "canvas";
@@ -270,10 +269,10 @@ async function viewSignInPage() {
     );
     const htmlString = response.data;
     // 使用jsdom解析HTML
-    const dom = new JSDOM(htmlString, {
-      runScripts: "dangerously",
-      resources: "usable",
-    });
+    // const dom = new JSDOM(htmlString, {
+    //   runScripts: "dangerously",
+    //   resources: "usable",
+    // });
     // 等待所有脚本执行完毕（可能需要额外的等待时间或检查）
     // 由于jsdom的'runScripts'设置为'dangerously'，脚本会立即执行，但有时可能需要额外的处理来确保DOM完全加载
     // 例如，你可以通过检查特定的DOM元素或使用setTimeout来模拟浏览器的加载行为
@@ -376,6 +375,10 @@ async function signIn() {
   // } else {
   //   computedStepCount(userInfo);
   // }
+
+  // 执行
+  const res = await getDeviceId();
+  console.log("DeviceID:", res);
 
   // 签到
   handleSign();
