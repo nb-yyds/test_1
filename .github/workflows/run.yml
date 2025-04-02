@@ -1,0 +1,29 @@
+name: 刷步数
+
+on:
+  schedule:
+    - cron: '0 1,5,10 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@main
+      - name: Setup Node.js environment
+        uses: actions/setup-node@main
+        with:
+          node-version: 18
+        
+      - name: 初始化-安装node
+        id: build
+        run: |
+          npm install
+
+      - name: 开始
+        id: run
+        env:
+          CONFIG: ${{ secrets.CONFIG }}
+        run: |
+          node main.js
