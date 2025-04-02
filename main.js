@@ -5,47 +5,8 @@ import dayjs from "dayjs";
 import { JSDOM } from "jsdom";
 
 import puppeteer from "puppeteer";
-
-async function getRenderedHTML(url) {
-  // 启动浏览器实例
-  const browser = await puppeteer.launch({
-    headless: "new", // 无界面模式
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
-  });
-
-  try {
-    const page = await browser.newPage();
-
-    // 设置浏览器请求头（模拟真实用户）
-    await page.setExtraHTTPHeaders({
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    });
-
-    // 导航到目标页面，并等待所有资源加载完成
-    await page.goto(url, {
-      waitUntil: "networkidle2", // 等待网络空闲（推荐）
-      timeout: 30000, // 超时时间 30 秒
-    });
-
-    // 可选：等待特定条件（如某个元素出现）
-    await page.waitForSelector("#dynamic-content", {
-      visible: true,
-      timeout: 5000,
-    });
-
-    // 获取渲染后的完整 HTML
-    const html = await page.content();
-
-    return html;
-  } finally {
-    await browser.close(); // 确保关闭浏览器实例
-  }
-}
+import fs from "fs";
+import path from "path";
 
 // 联想的数美配置：源代码 --> club.lenovo.com.cn --> signlist
 const _smConf = {
@@ -56,6 +17,49 @@ const _smConf = {
   staticHost: "static.portal101.cn", //必填, 设置 JS-SDK 文件域名
   protocol: "https", // 如果使用 https，则设置，如不使用，则不设置这个字段
 };
+async function getDeviceId() {
+  const browser = await puppeteer.launch({
+    headless: "new", // 使用无头模式
+    args: ["--no-sandbox"], // 避免沙盒权限问题
+  });
+  const page = await browser.newPage();
+
+  // 1. 加载数美 SDK
+  await page.addScriptTag({
+    path: "./fp.min.js", // SDK 本地路径
+  });
+
+  // 2. 隐藏自动化特征（关键！）
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, "webdriver", {
+      get: () => false,
+    });
+    window.navigator.chrome = { runtime: {} }; // 模拟 Chrome 扩展
+  });
+
+  // 3. 调用 SDK 方法
+  const deviceId = await page.evaluate(() => {
+    return new Promise((resolve) => {
+      // 初始化 SDK（根据数美文档配置参数）
+      window.SMSDK.init({
+        ..._smConf,
+      });
+
+      // 获取设备 ID
+      window.SMSDK.getDeviceId((id) => {
+        resolve(id);
+      });
+    });
+  });
+
+  await browser.close();
+  return deviceId;
+}
+
+// 执行
+getDeviceId()
+  .then((id) => console.log("DeviceID:", id))
+  .catch((err) => console.error("Failed:", err));
 
 // import { JSDOM } from "jsdom";
 // import { createCanvas } from "canvas";
@@ -273,10 +277,10 @@ async function viewSignInPage() {
     // 等待所有脚本执行完毕（可能需要额外的等待时间或检查）
     // 由于jsdom的'runScripts'设置为'dangerously'，脚本会立即执行，但有时可能需要额外的处理来确保DOM完全加载
     // 例如，你可以通过检查特定的DOM元素或使用setTimeout来模拟浏览器的加载行为
-    await delay(20000);
+    // await delay(20000);
 
     // 你可以在这里访问修改后的DOM
-    console.log(dom.serialize()); // 输出修改后的HTML
+    // console.log(dom.serialize()); // 输出修改后的HTML
 
     // console.log(111, response);
     // 使用正则表达式提取 $CONFIG.shumeideviceId 的值
