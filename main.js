@@ -2,99 +2,6 @@ import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
 
-import { JSDOM } from "jsdom";
-
-import puppeteer from "puppeteer";
-import fs from "fs";
-import path from "path";
-
-// 联想的数美配置：源代码 --> club.lenovo.com.cn --> signlist
-const _smConf = {
-  organization: "OiSyzKqqwO9gAy7AsaIP", //必填，组织标识，邮件中 organization 项
-  appId: "default", //必填， 应用标识， 默认传值 default，其他应用标识提前联系数美协助定义
-  publicKey:
-    "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCGzEbp+0og3VkzT/DUquAq0fZ+KFEZgIc8cak9rFYqQ2zgBhY9s1gprIFqY2efpQKwWhOSF/L11zn3Bdj7fjJnqQEDpwis3JaIgtBEl8lCIWaKejI9td8CRo3tOno3bmC4VuplY5X6FUGUs9E26QrV1R08TbYv2IbBhz5jVT0riwIDAQAB", //必填，私钥标识，邮件中 publicKey 项
-  staticHost: "static.portal101.cn", //必填, 设置 JS-SDK 文件域名
-  protocol: "https", // 如果使用 https，则设置，如不使用，则不设置这个字段
-};
-async function getDeviceId() {
-  console.log(111);
-  const browser = await puppeteer.launch({
-    headless: "new", // 使用无头模式
-    args: ["--no-sandbox"], // 避免沙盒权限问题
-  });
-  const page = await browser.newPage();
-  console.log(222);
-
-  // 签到
-  await handleSign();
-
-  // 1. 加载数美 SDK
-  var jsTimer = (new Date().getTime() / (6 * 3600 * 1000)).toFixed(0);
-  await page.goto(
-    "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" + jsTimer,
-    { waitUntil: "networkidle0" }
-  );
-
-  // 在 page.goto 后添加
-  await page.waitForFunction(
-    () => {
-      return window.allScriptsLoaded; // 假设页面有全局变量标记脚本加载完成
-    },
-    { timeout: 10000 }
-  );
-
-  page.on("response", async (response) => {
-    if (response.url().endsWith(".js")) {
-      const content = await response.text();
-      console.log("外部脚本内容:", content);
-    }
-  });
-
-  // 或直接注入本地SDK
-  // await page.addScriptTag({
-  //   path: "./fp.min.js", // SDK 本地路径
-  // });
-  // const smSDK = fs.readFileSync("./fp.min.js", "utf8");
-  // await page.addScriptTag({ content: smSDK });
-
-  // console.log(12345, jsTimer);
-
-  // // 2. 隐藏自动化特征（关键！）
-  // await page.evaluateOnNewDocument(() => {
-  //   console.log(333);
-  //   Object.defineProperty(navigator, "webdriver", {
-  //     get: () => false,
-  //   });
-  //   window.navigator.chrome = { runtime: {} }; // 模拟 Chrome 扩展
-  // });
-
-  // // 3. 调用 SDK 方法
-  // console.log(444);
-  // const deviceId = await page.evaluate(() => {
-  //   return new Promise((resolve) => {
-  //     // 初始化 SDK（根据数美文档配置参数）
-  //     window.SMSDK.init({
-  //       ..._smConf,
-  //     });
-
-  //     // 获取设备 ID
-  //     window.SMSDK.getDeviceId((id) => {
-  //       console.log(555, id);
-  //       resolve(id);
-  //     });
-  //   });
-  // });
-
-  // await browser.close();
-  // return deviceId;
-}
-
-// import { JSDOM } from "jsdom";
-// import { createCanvas } from "canvas";
-// import fs from "fs";
-// import path from "path";
-
 let CookieValue =
   "tFBt_b693_lastvisit=1743494948; LA_F_T_10000008=1743498554503; LA_C_Id=_ck25040117091415039091374371772; LA_V_T_N_S_10000008=1743498554503; LA_C_C_Id=_sk202504011026070.67395500.5839; leid=1.qLhId4wBha0; LA_V_T_N_10000008=1743498565373; tFBt_b693_lastact=1743498559%09circle.php%09index; LA_F_T_10000001=1743498567336; LA_R_T_10000001=1743498567336; LA_M_W_10000001=_ck25040117091415039091374371772%7C10000001%7C%7C%7C; LA_F_T_10000231=1743499365596; LA_R_T_10000231=1743499365596; LA_V_T_10000231=1743499365596; LA_M_W_10000231=_ck25040117091415039091374371772%7C10000231%7C%7C%7C; _ga=GA1.3.605264071.1743499370; _gid=GA1.3.829343798.1743499370; cerpreg-passport=|2|1743499422|1746091422|bGVub3ZvSWQ6MTE6MTAwOTU2MTIwODF8bG9naW5OYW1lOjIwOjQ5MTg5NDM0NSU0MHFxJTJlY29tfG1lbWJlcklkOjEwOjE3NDYwOTE0MjJ8Z3JvdXBDb2RlOjE6MXxpc0xlbm92bzoxOjA=|ageTrhuf4Ep1ezm2w0KioH6AMh/DDcpeVBi3KsCm5Frwma0hgCP76y1tALEqwTigiNXj5eIBKPxYEAHTmaTSG0QD2Q1yxkA4pcCjB8S11D2abjkpjV8Ayl0nFA2PKqTFgQzQSgTVvyp4Ckm51WWh8O35orYiXTPghP/etPIRiUwD8tNWsqaleB4ilHELNHP03RopBuVR+6ddY6+b5x9qWUg9436sX9VAtbtaMZqQngxmlS3awPPgWCigfiGvoPJVQ5iYvqWNOgQFzBldD1NYNQ3YMcl8TMsZBy7SglK95eaZ/+GLXJlM4M/3LZ2nD8rpDNtaH4VzFWMv0gtjUIwsSQ==|; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2210095612081%22%2C%22first_id%22%3A%22195f09cabc14c0-0323bfaa98afdd2-26001f51-921600-195f09cabc21a2f%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%7D%2C%22identities%22%3A%22eyIkaWRlbnRpdHlfY29va2llX2lkIjoiMTk1ZjA5Y2FiYzE0YzAtMDMyM2JmYWE5OGFmZGQyLTI2MDAxZjUxLTkyMTYwMC0xOTVmMDljYWJjMjFhMmYiLCIkaWRlbnRpdHlfbG9naW5faWQiOiIxMDA5NTYxMjA4MSJ9%22%2C%22history_login_id%22%3A%7B%22name%22%3A%22%24identity_login_id%22%2C%22value%22%3A%2210095612081%22%7D%2C%22%24device_id%22%3A%22195f09cabc14c0-0323bfaa98afdd2-26001f51-921600-195f09cabc21a2f%22%7D; LA_V_T_10000001=1743501044225; LA_M_W_10000008=_ck25040117091415039091374371772%7C10000008%7C%7Cpc_888%7Cpc_pc_common; tFBt_sns_lenovo_init=d6aclAVc0b1eJEKGWg411faB3sNKpiAKYjw3LRo%2BwFZ2RIjPCaDeQcoHVqzSXZhpsKjzDkWKpbSC5Ybi1jHHcx6%2BE6GyWnRdG%2FCxYWOzZGozbgzLD86v94xZb1NotrH3CdVVre%2BLS%2FCj8MT6OzHdWcm50GrGHdzCFBBAiUFfOWi8l0cz2IPvzqFV%2B9qjJLzpbqRU74Y2Vate2USkxI3SDdGaZhmuv6oYNg7gsAiVx8%2Bsf9MZjHF4ruA71gngty3tPQb5zVYphoNZAWpxLXIlDb0XIE8nSVL9SMMQBfQqK%2FHHPBKM0sdzSq5hxNg5HeRbo5WYHB6qoe1jKPWnBIa5oPhQMPPwBjh6d%2Fe5Uh5mqDa2cFac3QX2z1giY49sJmMwuoFF0SjE03vjQqD1RXIP7HKF3ipjbpqAcrKWysHw9dMZjCsOyUuvqV%2BErUITuBHCIQjmb%2Fl6ehRliTVuqe5vv%2BntSaYjNBSaOm91nQ9t523aWA7uQUhvkugf%2BUrjVdeQVA8DaYewNl9NxAvTVJL6NRAscYnJ4QvGd9UAP%2Bg5YIyloo0YaGS%2Bj4xIHoZQlbqGoZTRGCRlCDpeUOZ2ebygQpZdlS6jkerCUNAemhjraUNUAMxvTuPzGAa4xofQ51M061uT%2FBOHv66aAqIQqfoR2NxCl2cs%2FMnwpt%2FDXgN8GNMO%2FOM279Q84kF77ieeaueSqJcqqDP4OZFnMf8aZtvcfrc2skNxlSYAurjdhyJ8v%2BYE9EbbkekDhJO8lqegOKOL0gtOReggoVcKH5aqt%2F2l%2F6VDrVzbAtlA0yzD4iNvLAG3liCgaZda7ACTkFRPGnNVPvxUq79%2FL50aJh3JFMVrY%2FRIPXog0hpHIXE4AkNCPaehs65XiLx425ZZptp2g9C3UmFU%2FbE7rXNE5F6d9hJw%2Fkp5kUuW4gsjjY4pH31J1z%2BpIla9M39rKv%2Bm8NX%2FPqY%2Fd8Equ8T28u%2F%2Be%2FsJUHGVvKo%2BLi21v32p2t02MwKJsymp6CxvG5V7X7FmgllcLzKBt4tyJla%2Bj9hU9X5Ee6tLIwevf%2BwKtzLRSw; XSRF-TOKEN=eyJpdiI6IldzMnFMVXJyTlBRMWJNcnRYWGpWZnc9PSIsInZhbHVlIjoiT2gwUkIwbHd6U1U1d1NyK0c4TWtRN2FpczNSREY2UDFEVm1RRVJpRjhZanpsWUYwVzkyZ1RINnJyWDNIKzY3QUxVTzNPbEZjeFhMV1ZuN0VyOG55bmxObnMyVm1jQzZMNnRwdVVuZmVaei9VSmwvTU1za0xNS3lqMXo2aWRkazciLCJtYWMiOiIxNDA0ZmNmZWMyODAyNjk3MzE1OGYzMDVjYjNkM2ZhMGY2NTAzZTIzNDI2MDRhMGU2NmI3NjYyNmE3MjUxOTQwIiwidGFnIjoiIn0%3D; LA_R_C_10000008=1; LA_R_T_10000008=1743561232441; LA_V_T_10000008=1743561232441; Hm_lvt_500de05052e5d5e30e8aab9788ec62bf=1742980621,1743474427,1743561233; Hm_lpvt_500de05052e5d5e30e8aab9788ec62bf=1743561233; HMACCOUNT=5DD12744E987A833; .thumbcache_fa5607ee107e2a8e0c319b41a88868c3=ugSuKNhJNYXcWWRH+3jc6+CsW1vbOgWECNAZmFsrazyyuQTZZIh+XvPpJiRqit5ifSF7Gf9Phdp1Yh3kK33qLg%3D%3D";
 
@@ -123,7 +30,7 @@ const headers = {
 };
 
 // 重试标识，小于3则重试
-let errGetAccessCode = 0;
+let errSignCode = 0;
 let errGetTokenCode = 0;
 let errRunStepCode = 0;
 
@@ -298,23 +205,23 @@ async function viewSignInPage() {
       }
     );
     const htmlString = response.data;
-    // 使用jsdom解析HTML
-    // const dom = new JSDOM(htmlString, {
-    //   runScripts: "dangerously",
-    //   resources: "usable",
-    // });
-    // 等待所有脚本执行完毕（可能需要额外的等待时间或检查）
-    // 由于jsdom的'runScripts'设置为'dangerously'，脚本会立即执行，但有时可能需要额外的处理来确保DOM完全加载
-    // 例如，你可以通过检查特定的DOM元素或使用setTimeout来模拟浏览器的加载行为
-    // await delay(20000);
+    // // 使用jsdom解析HTML
+    // // const dom = new JSDOM(htmlString, {
+    // //   runScripts: "dangerously",
+    // //   resources: "usable",
+    // // });
+    // // 等待所有脚本执行完毕（可能需要额外的等待时间或检查）
+    // // 由于jsdom的'runScripts'设置为'dangerously'，脚本会立即执行，但有时可能需要额外的处理来确保DOM完全加载
+    // // 例如，你可以通过检查特定的DOM元素或使用setTimeout来模拟浏览器的加载行为
+    // // await delay(20000);
 
-    // 你可以在这里访问修改后的DOM
-    // console.log(dom.serialize()); // 输出修改后的HTML
+    // // 你可以在这里访问修改后的DOM
+    // // console.log(dom.serialize()); // 输出修改后的HTML
 
-    // console.log(111, response);
-    // 使用正则表达式提取 $CONFIG.shumeideviceId 的值
-    const matchs = htmlString.match(/var\s+shumeideviceId\s*=\s*'([^']*)'/);
-    console.log("未找到 $CONFIG.shumeideviceId 的值", matchs);
+    // // console.log(111, response);
+    // // 使用正则表达式提取 $CONFIG.shumeideviceId 的值
+    // const matchs = htmlString.match(/var\s+shumeideviceId\s*=\s*'([^']*)'/);
+    // console.log("未找到 $CONFIG.shumeideviceId 的值", matchs);
 
     // if (match && match[1]) {
     //   const shumeideviceId = match[1];
@@ -323,13 +230,13 @@ async function viewSignInPage() {
     //   console.log("未找到 $CONFIG.shumeideviceId 的值");
     // }
 
-    return;
     // 使用正则表达式提取 $CONFIG.token 的值
     const match = htmlString.match(/\$CONFIG\.token\s*=\s*"([^"]+)"/);
 
     if (match && match[1]) {
       const token = match[1];
-      return token;
+      handleSign(token);
+      // return token;
       console.log("访问签到列表得到的Token:", token); // 输出: k49WZ1x8SfapsLHgb0NWC4u917Zz0AhmbRqZRz3A
     } else {
       console.log("未找到 $CONFIG.token 的值");
@@ -341,15 +248,14 @@ async function viewSignInPage() {
   }
 }
 // 签到
-async function handleSign() {
-  const token = await viewSignInPage(); // 获取token
+async function handleSign(token) {
+  // const token = await viewSignInPage(); // 获取token
   if (!token) {
     console.log("无法获取token，无法进行签到");
     // 发送邮件通知
     return;
   }
 
-  return;
   const url = "https://club.lenovo.com.cn/sign";
 
   const params = {
@@ -383,11 +289,17 @@ async function handleSign() {
     });
     console.log("签到成功", response.data);
   } catch (error) {
-    console.log("签到失败", error);
+    errSignCode++;
+    if (errSignCode <= 3) {
+      await delay(5000);
+      handleSign(token);
+    } else {
+      console.log("签到失败", error);
+    }
   }
 
   // 发送刷步数请求
-  getSignInList();
+  // getSignInList();
 }
 
 // 获取数美 DeviceId
@@ -407,7 +319,7 @@ async function signIn() {
   // }
 
   // 执行
-  await getDeviceId();
+  await viewSignInPage();
 }
 signIn();
 
