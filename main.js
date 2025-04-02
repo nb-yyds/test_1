@@ -18,17 +18,6 @@ const _smConf = {
   protocol: "https", // 如果使用 https，则设置，如不使用，则不设置这个字段
 };
 async function getDeviceId() {
-  window._smReadyFuncs = [];
-  window.SMSdk = {
-    onBoxDataReady: function (boxData) {
-      // 非必填
-      console.log("此时拿到的数据为boxData或者boxId", boxData);
-    },
-    ready: function (fn) {
-      fn && _smReadyFuncs.push(fn);
-    },
-  };
-
   console.log(111);
   const browser = await puppeteer.launch({
     headless: "new", // 使用无头模式
@@ -37,12 +26,26 @@ async function getDeviceId() {
   const page = await browser.newPage();
   console.log(222);
 
+  // 签到
+  await handleSign();
+
   // 1. 加载数美 SDK
-  var jsTimer = (new Date().getTime() / (6 * 3600 * 1000)).toFixed(0);
-  await page.goto(
-    "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" + jsTimer,
-    { waitUntil: "networkidle0" }
-  );
+  // var jsTimer = (new Date().getTime() / (6 * 3600 * 1000)).toFixed(0);
+  // await page.goto(
+  //   "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" + jsTimer,
+  //   { waitUntil: "networkidle0" }
+  // );
+
+  console.log(1111);
+
+  // 1. 监听所有新增的 <script> 标签
+  const dynamicScripts = [];
+  await page.exposeFunction("captureScript", (src, content) => {
+    dynamicScripts.push({ src, content });
+  });
+
+  console.log(2222, dynamicScripts);
+
   // 或直接注入本地SDK
   // await page.addScriptTag({
   //   path: "./fp.min.js", // SDK 本地路径
@@ -50,36 +53,36 @@ async function getDeviceId() {
   // const smSDK = fs.readFileSync("./fp.min.js", "utf8");
   // await page.addScriptTag({ content: smSDK });
 
-  console.log(12345, jsTimer);
+  // console.log(12345, jsTimer);
 
-  // 2. 隐藏自动化特征（关键！）
-  await page.evaluateOnNewDocument(() => {
-    console.log(333);
-    Object.defineProperty(navigator, "webdriver", {
-      get: () => false,
-    });
-    window.navigator.chrome = { runtime: {} }; // 模拟 Chrome 扩展
-  });
+  // // 2. 隐藏自动化特征（关键！）
+  // await page.evaluateOnNewDocument(() => {
+  //   console.log(333);
+  //   Object.defineProperty(navigator, "webdriver", {
+  //     get: () => false,
+  //   });
+  //   window.navigator.chrome = { runtime: {} }; // 模拟 Chrome 扩展
+  // });
 
-  // 3. 调用 SDK 方法
-  const deviceId = await page.evaluate(() => {
-    console.log(444);
-    return new Promise((resolve) => {
-      // 初始化 SDK（根据数美文档配置参数）
-      window.SMSDK.init({
-        ..._smConf,
-      });
+  // // 3. 调用 SDK 方法
+  // console.log(444);
+  // const deviceId = await page.evaluate(() => {
+  //   return new Promise((resolve) => {
+  //     // 初始化 SDK（根据数美文档配置参数）
+  //     window.SMSDK.init({
+  //       ..._smConf,
+  //     });
 
-      // 获取设备 ID
-      window.SMSDK.getDeviceId((id) => {
-        console.log(555, id);
-        resolve(id);
-      });
-    });
-  });
+  //     // 获取设备 ID
+  //     window.SMSDK.getDeviceId((id) => {
+  //       console.log(555, id);
+  //       resolve(id);
+  //     });
+  //   });
+  // });
 
-  await browser.close();
-  return deviceId;
+  // await browser.close();
+  // return deviceId;
 }
 
 // import { JSDOM } from "jsdom";
@@ -399,11 +402,7 @@ async function signIn() {
   // }
 
   // 执行
-  const res = await getDeviceId();
-  console.log("DeviceID:", res);
-
-  // 签到
-  handleSign();
+  await getDeviceId();
 }
 signIn();
 
