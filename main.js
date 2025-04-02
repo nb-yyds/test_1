@@ -18,6 +18,17 @@ const _smConf = {
   protocol: "https", // 如果使用 https，则设置，如不使用，则不设置这个字段
 };
 async function getDeviceId() {
+  window._smReadyFuncs = [];
+  window.SMSdk = {
+    onBoxDataReady: function (boxData) {
+      // 非必填
+      console.log("此时拿到的数据为boxData或者boxId", boxData);
+    },
+    ready: function (fn) {
+      fn && _smReadyFuncs.push(fn);
+    },
+  };
+
   console.log(111);
   const browser = await puppeteer.launch({
     headless: "new", // 使用无头模式
