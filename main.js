@@ -2,6 +2,8 @@ import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
 
+import puppeteer from "puppeteer";
+
 let CookieValue =
   "tFBt_b693_lastvisit=1743494948; LA_F_T_10000008=1743498554503; LA_C_Id=_ck25040117091415039091374371772; LA_V_T_N_S_10000008=1743498554503; LA_C_C_Id=_sk202504011026070.67395500.5839; leid=1.qLhId4wBha0; LA_V_T_N_10000008=1743498565373; tFBt_b693_lastact=1743498559%09circle.php%09index; LA_F_T_10000001=1743498567336; LA_R_T_10000001=1743498567336; LA_M_W_10000001=_ck25040117091415039091374371772%7C10000001%7C%7C%7C; LA_F_T_10000231=1743499365596; LA_R_T_10000231=1743499365596; LA_V_T_10000231=1743499365596; LA_M_W_10000231=_ck25040117091415039091374371772%7C10000231%7C%7C%7C; _ga=GA1.3.605264071.1743499370; _gid=GA1.3.829343798.1743499370; cerpreg-passport=|2|1743499422|1746091422|bGVub3ZvSWQ6MTE6MTAwOTU2MTIwODF8bG9naW5OYW1lOjIwOjQ5MTg5NDM0NSU0MHFxJTJlY29tfG1lbWJlcklkOjEwOjE3NDYwOTE0MjJ8Z3JvdXBDb2RlOjE6MXxpc0xlbm92bzoxOjA=|ageTrhuf4Ep1ezm2w0KioH6AMh/DDcpeVBi3KsCm5Frwma0hgCP76y1tALEqwTigiNXj5eIBKPxYEAHTmaTSG0QD2Q1yxkA4pcCjB8S11D2abjkpjV8Ayl0nFA2PKqTFgQzQSgTVvyp4Ckm51WWh8O35orYiXTPghP/etPIRiUwD8tNWsqaleB4ilHELNHP03RopBuVR+6ddY6+b5x9qWUg9436sX9VAtbtaMZqQngxmlS3awPPgWCigfiGvoPJVQ5iYvqWNOgQFzBldD1NYNQ3YMcl8TMsZBy7SglK95eaZ/+GLXJlM4M/3LZ2nD8rpDNtaH4VzFWMv0gtjUIwsSQ==|; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2210095612081%22%2C%22first_id%22%3A%22195f09cabc14c0-0323bfaa98afdd2-26001f51-921600-195f09cabc21a2f%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%7D%2C%22identities%22%3A%22eyIkaWRlbnRpdHlfY29va2llX2lkIjoiMTk1ZjA5Y2FiYzE0YzAtMDMyM2JmYWE5OGFmZGQyLTI2MDAxZjUxLTkyMTYwMC0xOTVmMDljYWJjMjFhMmYiLCIkaWRlbnRpdHlfbG9naW5faWQiOiIxMDA5NTYxMjA4MSJ9%22%2C%22history_login_id%22%3A%7B%22name%22%3A%22%24identity_login_id%22%2C%22value%22%3A%2210095612081%22%7D%2C%22%24device_id%22%3A%22195f09cabc14c0-0323bfaa98afdd2-26001f51-921600-195f09cabc21a2f%22%7D; LA_V_T_10000001=1743501044225; LA_M_W_10000008=_ck25040117091415039091374371772%7C10000008%7C%7Cpc_888%7Cpc_pc_common; tFBt_sns_lenovo_init=d6aclAVc0b1eJEKGWg411faB3sNKpiAKYjw3LRo%2BwFZ2RIjPCaDeQcoHVqzSXZhpsKjzDkWKpbSC5Ybi1jHHcx6%2BE6GyWnRdG%2FCxYWOzZGozbgzLD86v94xZb1NotrH3CdVVre%2BLS%2FCj8MT6OzHdWcm50GrGHdzCFBBAiUFfOWi8l0cz2IPvzqFV%2B9qjJLzpbqRU74Y2Vate2USkxI3SDdGaZhmuv6oYNg7gsAiVx8%2Bsf9MZjHF4ruA71gngty3tPQb5zVYphoNZAWpxLXIlDb0XIE8nSVL9SMMQBfQqK%2FHHPBKM0sdzSq5hxNg5HeRbo5WYHB6qoe1jKPWnBIa5oPhQMPPwBjh6d%2Fe5Uh5mqDa2cFac3QX2z1giY49sJmMwuoFF0SjE03vjQqD1RXIP7HKF3ipjbpqAcrKWysHw9dMZjCsOyUuvqV%2BErUITuBHCIQjmb%2Fl6ehRliTVuqe5vv%2BntSaYjNBSaOm91nQ9t523aWA7uQUhvkugf%2BUrjVdeQVA8DaYewNl9NxAvTVJL6NRAscYnJ4QvGd9UAP%2Bg5YIyloo0YaGS%2Bj4xIHoZQlbqGoZTRGCRlCDpeUOZ2ebygQpZdlS6jkerCUNAemhjraUNUAMxvTuPzGAa4xofQ51M061uT%2FBOHv66aAqIQqfoR2NxCl2cs%2FMnwpt%2FDXgN8GNMO%2FOM279Q84kF77ieeaueSqJcqqDP4OZFnMf8aZtvcfrc2skNxlSYAurjdhyJ8v%2BYE9EbbkekDhJO8lqegOKOL0gtOReggoVcKH5aqt%2F2l%2F6VDrVzbAtlA0yzD4iNvLAG3liCgaZda7ACTkFRPGnNVPvxUq79%2FL50aJh3JFMVrY%2FRIPXog0hpHIXE4AkNCPaehs65XiLx425ZZptp2g9C3UmFU%2FbE7rXNE5F6d9hJw%2Fkp5kUuW4gsjjY4pH31J1z%2BpIla9M39rKv%2Bm8NX%2FPqY%2Fd8Equ8T28u%2F%2Be%2FsJUHGVvKo%2BLi21v32p2t02MwKJsymp6CxvG5V7X7FmgllcLzKBt4tyJla%2Bj9hU9X5Ee6tLIwevf%2BwKtzLRSw; XSRF-TOKEN=eyJpdiI6IldzMnFMVXJyTlBRMWJNcnRYWGpWZnc9PSIsInZhbHVlIjoiT2gwUkIwbHd6U1U1d1NyK0c4TWtRN2FpczNSREY2UDFEVm1RRVJpRjhZanpsWUYwVzkyZ1RINnJyWDNIKzY3QUxVTzNPbEZjeFhMV1ZuN0VyOG55bmxObnMyVm1jQzZMNnRwdVVuZmVaei9VSmwvTU1za0xNS3lqMXo2aWRkazciLCJtYWMiOiIxNDA0ZmNmZWMyODAyNjk3MzE1OGYzMDVjYjNkM2ZhMGY2NTAzZTIzNDI2MDRhMGU2NmI3NjYyNmE3MjUxOTQwIiwidGFnIjoiIn0%3D; LA_R_C_10000008=1; LA_R_T_10000008=1743561232441; LA_V_T_10000008=1743561232441; Hm_lvt_500de05052e5d5e30e8aab9788ec62bf=1742980621,1743474427,1743561233; Hm_lpvt_500de05052e5d5e30e8aab9788ec62bf=1743561233; HMACCOUNT=5DD12744E987A833; .thumbcache_fa5607ee107e2a8e0c319b41a88868c3=ugSuKNhJNYXcWWRH+3jc6+CsW1vbOgWECNAZmFsrazyyuQTZZIh+XvPpJiRqit5ifSF7Gf9Phdp1Yh3kK33qLg%3D%3D";
 
@@ -205,6 +207,7 @@ async function viewSignInPage() {
       }
     );
     const htmlString = response.data;
+    console.log("获取到的html字符串", htmlString);
     // // 使用jsdom解析HTML
     // // const dom = new JSDOM(htmlString, {
     // //   runScripts: "dangerously",
@@ -235,9 +238,10 @@ async function viewSignInPage() {
 
     if (match && match[1]) {
       const token = match[1];
-      handleSign(token);
+      console.log("访问签到列表得到的Token:", token);
+      // handleSign(token);
+      mobileEmulation(token);
       // return token;
-      console.log("访问签到列表得到的Token:", token); // 输出: k49WZ1x8SfapsLHgb0NWC4u917Zz0AhmbRqZRz3A
     } else {
       console.log("未找到 $CONFIG.token 的值");
       return null; // 未找到时返回null
@@ -290,11 +294,12 @@ async function handleSign(token) {
     console.log("签到成功", response.data);
   } catch (error) {
     errSignCode++;
+    console.log("第" + errSignCode + "次签到失败");
     if (errSignCode <= 3) {
       await delay(5000);
       handleSign(token);
     } else {
-      console.log("签到失败", error);
+      console.log("重试结束，签到还是失败", error);
     }
   }
 
@@ -307,6 +312,58 @@ async function handleSign(token) {
 // 联想地址：network中查找：fp.min.js
 async function getSignDeviceId() {
   const url = "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?";
+}
+
+async function mobileEmulation(token) {
+  const browser = await puppeteer.launch({ headless: "new" });
+  const page = await browser.newPage();
+
+  // 设置移动端 User-Agent 和视口
+  await page.setUserAgent(
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7 like Mac OS X) AppleWebKit/605.1.15"
+  );
+  await page.setViewport({ width: 375, height: 812, isMobile: true });
+
+  // 设置全局请求头
+  await page.setExtraHTTPHeaders({
+    "Accept-Language": "en-US,en;q=0.9",
+    "X-Requested-With": "MyMobileApp",
+    ...headers,
+    Cookie: CookieValue,
+    Host: "club.lenovo.com.cn",
+    Origin: "https://club.lenovo.com.cn",
+    Pragma: "no-cache",
+    Referer: "https://club.lenovo.com.cn/signlist",
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": "Windows",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "X-Requested-With": "XMLHttpRequest",
+  });
+  // 构造带参数的URL
+  const url = `https://club.lenovo.com.cn/sign?_token=${token}&deviceId=${DeviceIdValue}`;
+  await page.goto(url);
+  console.log(3333);
+  // 触发时间
+  // await page.click(selector);
+  await page.evaluate(
+    (selector, eventType) => {
+      const element = document.querySelector(selector);
+      element.dispatchEvent(new Event(eventType));
+    },
+    "#signSubmit",
+    "click"
+  );
+  // 3. 等待事件触发后的结果（如网络请求或DOM更新）
+  await page.waitForTimeout(1000); // 简单等待
+  console.log(4444);
+
+  // 4. 获取触发事件后的页面状态
+  const htmlAfterEvent = await page.content();
+  const networkData = await analyzeNetworkRequests(page); // 自定义方法
+  console.log(5555);
+  await browser.close();
 }
 
 // 主程序
