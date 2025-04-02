@@ -30,21 +30,26 @@ async function getDeviceId() {
   await handleSign();
 
   // 1. 加载数美 SDK
-  // var jsTimer = (new Date().getTime() / (6 * 3600 * 1000)).toFixed(0);
-  // await page.goto(
-  //   "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" + jsTimer,
-  //   { waitUntil: "networkidle0" }
-  // );
+  var jsTimer = (new Date().getTime() / (6 * 3600 * 1000)).toFixed(0);
+  await page.goto(
+    "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" + jsTimer,
+    { waitUntil: "networkidle0" }
+  );
 
-  console.log(1111);
+  // 在 page.goto 后添加
+  await page.waitForFunction(
+    () => {
+      return window.allScriptsLoaded; // 假设页面有全局变量标记脚本加载完成
+    },
+    { timeout: 10000 }
+  );
 
-  // 1. 监听所有新增的 <script> 标签
-  const dynamicScripts = [];
-  await page.exposeFunction("captureScript", (src, content) => {
-    dynamicScripts.push({ src, content });
+  page.on("response", async (response) => {
+    if (response.url().endsWith(".js")) {
+      const content = await response.text();
+      console.log("外部脚本内容:", content);
+    }
   });
-
-  console.log(2222, dynamicScripts);
 
   // 或直接注入本地SDK
   // await page.addScriptTag({
