@@ -25,10 +25,20 @@ async function getDeviceId() {
   });
   const page = await browser.newPage();
   console.log(222);
+
   // 1. 加载数美 SDK
-  await page.addScriptTag({
-    path: "./fp.min.js", // SDK 本地路径
-  });
+  // await page.goto(
+  //   "https://static.portal101.cn/dist/web/v3.0.0/fp.min.js?=" +
+  //     new Date.getTime()
+  // );
+  // 或直接注入本地SDK
+  // await page.addScriptTag({
+  //   path: "./fp.min.js", // SDK 本地路径
+  // });
+  const smSDK = fs.readFileSync("./fp.min.js", "utf8");
+  await page.addScriptTag({ content: smSDK });
+
+  console.log(3333333, smSDK);
 
   // 2. 隐藏自动化特征（关键！）
   await page.evaluateOnNewDocument(() => {
