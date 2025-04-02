@@ -2,6 +2,51 @@ import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
 
+import { JSDOM } from "jsdom";
+
+import puppeteer from "puppeteer";
+
+async function getRenderedHTML(url) {
+  // 启动浏览器实例
+  const browser = await puppeteer.launch({
+    headless: "new", // 无界面模式
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
+  });
+
+  try {
+    const page = await browser.newPage();
+
+    // 设置浏览器请求头（模拟真实用户）
+    await page.setExtraHTTPHeaders({
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    });
+
+    // 导航到目标页面，并等待所有资源加载完成
+    await page.goto(url, {
+      waitUntil: "networkidle2", // 等待网络空闲（推荐）
+      timeout: 30000, // 超时时间 30 秒
+    });
+
+    // 可选：等待特定条件（如某个元素出现）
+    await page.waitForSelector("#dynamic-content", {
+      visible: true,
+      timeout: 5000,
+    });
+
+    // 获取渲染后的完整 HTML
+    const html = await page.content();
+
+    return html;
+  } finally {
+    await browser.close(); // 确保关闭浏览器实例
+  }
+}
+
 // 联想的数美配置：源代码 --> club.lenovo.com.cn --> signlist
 const _smConf = {
   organization: "OiSyzKqqwO9gAy7AsaIP", //必填，组织标识，邮件中 organization 项
@@ -220,7 +265,20 @@ async function viewSignInPage() {
       }
     );
     const htmlString = response.data;
-    console.log(111, response);
+    // 使用jsdom解析HTML
+    const dom = new JSDOM(htmlString, {
+      runScripts: "dangerously",
+      resources: "usable",
+    });
+    // 等待所有脚本执行完毕（可能需要额外的等待时间或检查）
+    // 由于jsdom的'runScripts'设置为'dangerously'，脚本会立即执行，但有时可能需要额外的处理来确保DOM完全加载
+    // 例如，你可以通过检查特定的DOM元素或使用setTimeout来模拟浏览器的加载行为
+    await delay(20000);
+
+    // 你可以在这里访问修改后的DOM
+    console.log(dom.serialize()); // 输出修改后的HTML
+
+    // console.log(111, response);
     // 使用正则表达式提取 $CONFIG.shumeideviceId 的值
     const matchs = htmlString.match(/var\s+shumeideviceId\s*=\s*'([^']*)'/);
     console.log("未找到 $CONFIG.shumeideviceId 的值", matchs);
@@ -314,9 +372,6 @@ async function signIn() {
   // } else {
   //   computedStepCount(userInfo);
   // }
-
-  // 获取数美
-  // getSignDeviceId();
 
   // 签到
   handleSign();
